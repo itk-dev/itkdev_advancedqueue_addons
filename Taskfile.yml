@@ -123,3 +123,12 @@ tasks:
     cmds:
       - ddev add-on get ddev/ddev-drupal-contrib
       - ddev restart
+
+  docs:update:
+    desc: Update documentation
+    platforms: [darwin]
+    cmds:
+      - brew install pipx
+      - pipx install markdown-code-runner
+      - pipx upgrade markdown-code-runner
+      - markdown-code-runner README.md --verbose

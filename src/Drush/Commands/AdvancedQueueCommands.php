@@ -12,7 +12,6 @@ use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\DependencyInjection\AutowireTrait;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drush\Attributes as CLI;
 use Drush\Commands\config\ConfigCommands;
@@ -29,27 +28,18 @@ use Symfony\Component\Process\Process;
 final class AdvancedQueueCommands extends DrushCommands {
   use AutowireTrait;
 
-  /**
-   * The queue storage.
-   */
-  private EntityStorageInterface $queueStorage;
-
   public function __construct(
-    EntityTypeManagerInterface $entityTypeManager,
+    private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly Connection $connection,
     #[Autowire(service: 'advancedqueue.processor')]
     private readonly ProcessorInterface $processor,
   ) {
-    $this->queueStorage = $entityTypeManager->getStorage('advancedqueue_queue');
   }
 
-  private const string COMMAND_LIST_JOBS = 'itkdev-advancedqueue:queue:list:jobs';
-  private const string COMMAND_PROCESS_JOB = 'itkdev-advancedqueue:job:process';
-  private const string COMMAND_SET_PAYLOAD_VALUE = 'itkdev-advancedqueue:job:set-payload-value';
-
-  // Command aliases matching the advancedqueue command naming.
-  private const array COMMAND_LIST_JOBS_ALIASES = ['advancedqueue:queue:list:jobs'];
-  private const array COMMAND_PROCESS_JOB_ALIASES = ['advancedqueue:queue:job:process'];
+  // Command names matching the advancedqueue command naming.
+  private const string COMMAND_LIST_JOBS = 'advancedqueue:queue:list:jobs';
+  private const string COMMAND_PROCESS_JOB = 'advancedqueue:queue:job:process';
+  private const string COMMAND_SET_PAYLOAD_VALUE = 'advancedqueue:queue:job:set-payload-value';
 
   /**
    * List jobs command.
@@ -57,7 +47,7 @@ final class AdvancedQueueCommands extends DrushCommands {
    * @phpstan-param array<string, mixed> $options
    *   The command options.
    */
-  #[CLI\Command(name: self::COMMAND_LIST_JOBS, aliases: self::COMMAND_LIST_JOBS_ALIASES)]
+  #[CLI\Command(name: self::COMMAND_LIST_JOBS)]
   #[CLI\Argument(name: 'queue_id', description: 'The queue ID.')]
   #[CLI\Argument(name: 'job_id', description: 'Job ID')]
   #[CLI\Option(name: 'show-payload', description: 'Show payload')]
@@ -77,7 +67,7 @@ final class AdvancedQueueCommands extends DrushCommands {
       'search' => NULL,
       'limit' => 1,
     ],
-  ) {
+  ): int {
     [$backend] = $this->loadQueueBackend($queue_id);
 
     // Build the query by hand to use JSON functions (cf.
@@ -159,7 +149,7 @@ final class AdvancedQueueCommands extends DrushCommands {
    * @phpstan-param array<string, mixed> $options
    *   The command options.
    */
-  #[CLI\Command(name: self::COMMAND_PROCESS_JOB, aliases: self::COMMAND_PROCESS_JOB_ALIASES)]
+  #[CLI\Command(name: self::COMMAND_PROCESS_JOB)]
   #[CLI\Argument(name: 'queue_id', description: 'The queue ID.')]
   #[CLI\Argument(name: 'job_id', description: 'Job ID')]
   #[CLI\Option(name: 'show-payload', description: 'Show payload')]
@@ -172,7 +162,7 @@ final class AdvancedQueueCommands extends DrushCommands {
     $options = [
       'show-payload' => FALSE,
     ],
-  ) {
+  ): int {
     [$backend, $queue] = $this->loadQueueBackend($queue_id);
     /** @var \Drupal\advancedqueue\Job $job */
     $job = $backend->loadJob($job_id);
@@ -184,10 +174,12 @@ final class AdvancedQueueCommands extends DrushCommands {
 
     $question = dt('Really process the job %id', ['%id' => $job->getId()]);
     if (!$this->io()->confirm($question, default: FALSE)) {
-      return;
+      return self::EXIT_SUCCESS;
     }
 
     $this->processor->processJob($job, $queue);
+
+    return self::EXIT_SUCCESS;
   }
 
   /**
@@ -224,7 +216,7 @@ final class AdvancedQueueCommands extends DrushCommands {
       'edit' => FALSE,
       'editor' => 'vi',
     ],
-  ) {
+  ): int {
     [$backend] = $this->loadQueueBackend($queue_id);
     try {
       $updateJob = new \ReflectionMethod($backend, 'updateJob');
@@ -291,7 +283,7 @@ final class AdvancedQueueCommands extends DrushCommands {
    *   The backend and its queue.
    */
   private function loadQueueBackend(string $queueId): array {
-    $queue = $this->queueStorage->load($queueId);
+    $queue = $this->entityTypeManager->getStorage('queue')->load($queueId);
     if (NULL === $queue) {
       throw new RuntimeException(dt('Cannot load queue %id.', ['%id' => $queueId]));
     }
@@ -317,6 +309,11 @@ final class AdvancedQueueCommands extends DrushCommands {
 
   /**
    * Lifted from Drush's config commands.
+   *
+   * @param array<array-key, mixed> $a
+   *   The first value.
+   * @param array<array-key, mixed> $b
+   *   The second value.
    */
   private function renderDiff(array $a, array $b): string {
     $createConfigStorage = function (array $values): StorageInterface {
@@ -339,12 +336,12 @@ final class AdvancedQueueCommands extends DrushCommands {
   /**
    * Edit payload interactively.
    *
-   * @param array $payload
+   * @param array<array-key, mixed> $payload
    *   The payload.
    * @param string $editor
    *   The editor to use.
    *
-   * @return array
+   * @return array<array-key, mixed>
    *   The edited payload.
    *
    * @throws \Symfony\Component\Console\Exception\RuntimeException
@@ -353,7 +350,8 @@ final class AdvancedQueueCommands extends DrushCommands {
     try {
       $process = Process::fromShellCommandline(sprintf('command -v %s >/dev/null 2>&1', $editor));
       $process->mustRun();
-    } catch (\Throwable $throwable) {
+    }
+    catch (\Throwable) {
       throw new RuntimeException(sprintf('Cannot run editor %s', $editor));
     }
     try {
