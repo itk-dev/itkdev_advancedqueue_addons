@@ -24,7 +24,9 @@
     ],
     "config": {
         "allow-plugins": {
-            "ergebnis/composer-normalize": true
+            "drupal/core-composer-scaffold": true,
+            "ergebnis/composer-normalize": true,
+            "symfony/runtime": true
         }
     }
 }
