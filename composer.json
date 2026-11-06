@@ -10,6 +10,7 @@
         }
     ],
     "require": {
+        "php": "^8.4",
         "drupal/advancedqueue": "^1.7",
         "drush/drush": "^13.8"
     },

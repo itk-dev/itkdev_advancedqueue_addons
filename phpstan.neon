@@ -1,3 +1,6 @@
+# This file is copied from config/drupal-module-ddev/phpstan.neon in https://github.com/itk-dev/devops_itkdev-docker.
+# Feel free to edit the file, but consider making a pull request if you find a general issue with the file.
+
 includes:
   # This placeholder filename will be replaced with the value of variable $_PHPSTAN_BASELINE_FILENAME
   - phpstan-baseline.neon

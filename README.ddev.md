@@ -1,3 +1,8 @@
+<!-- markdownlint-disable line-length -->
+<!-- This file is copied from config/drupal-module-ddev/README.ddev.md in https://github.com/itk-dev/devops_itkdev-docker. -->
+<!-- Feel free to edit the file, but consider making a pull request if you find a general issue with the file. -->
+<!-- markdownlint-enable line-length -->
+
 # DDEV
 
 We use [DDEV Drupal Contrib](https://addons.ddev.com/addons/ddev/ddev-drupal-contrib) for development.

@@ -42,7 +42,7 @@ jobs:
       - name: Twig coding standards
         run: >-
           [[ -z $(git ls-files '*.twig') ]] ||
-          ddev exec vendor/bin/twig-cs-fixer
+          ddev php vendor/bin/twig-cs-fixer
 
       - name: Code analysis
         run: ddev phpstan
