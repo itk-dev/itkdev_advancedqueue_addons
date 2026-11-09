@@ -283,7 +283,7 @@ final class AdvancedQueueCommands extends DrushCommands {
    *   The backend and its queue.
    */
   private function loadQueueBackend(string $queueId): array {
-    $queue = $this->entityTypeManager->getStorage('queue')->load($queueId);
+    $queue = $this->entityTypeManager->getStorage('advancedqueue_queue')->load($queueId);
     if (NULL === $queue) {
       throw new RuntimeException(dt('Cannot load queue %id.', ['%id' => $queueId]));
     }

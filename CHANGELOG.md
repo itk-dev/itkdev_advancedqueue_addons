@@ -7,4 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* [PR-3](https://github.com/itk-dev/itkdev_advancedqueue_addons/pull/3)
+  Fixed typo in queue entity name
+
 [Unreleased]: https://github.com/itk-dev/itkdev_advancedqueue_addons
