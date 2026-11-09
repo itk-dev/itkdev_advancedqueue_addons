@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\itkdev_advancedqueue\Drush\Commands;
+namespace Drupal\itkdev_advancedqueue_addons\Drush\Commands;
 
 use Drupal\advancedqueue\Entity\Queue;
 use Drupal\advancedqueue\Plugin\AdvancedQueue\Backend\SupportsLoadingJobsInterface;

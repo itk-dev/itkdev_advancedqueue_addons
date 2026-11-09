@@ -1,4 +1,4 @@
-# ITK Dev: Advanced Queue
+# ITK Dev: Advanced Queue add-ons
 
 Additional Drush commands for [Advanced Queue](https://www.drupal.org/project/advancedqueue).
 
@@ -8,8 +8,8 @@ Additional Drush commands for [Advanced Queue](https://www.drupal.org/project/ad
 ## Installation
 
 ``` shell
-composer require --dev itk-dev/itkdev_advancedqueue
-drush pm:install itkdev_advancedqueue
+composer require --dev itk-dev/itkdev_advancedqueue_addons
+drush pm:install itkdev_advancedqueue_addons
 ```
 
 ## Usage

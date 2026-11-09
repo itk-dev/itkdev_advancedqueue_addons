@@ -1,6 +1,6 @@
 {
-    "name": "itk-dev/itkdev_advancedqueue",
-    "description": "Addtional commands for Drupal's Advanced Queue module",
+    "name": "itk-dev/itkdev_advancedqueue_addons",
+    "description": "Add-ons for Drupal's Advanced Queue module",
     "license": "EUPL-1.2",
     "type": "drupal-module",
     "authors": [

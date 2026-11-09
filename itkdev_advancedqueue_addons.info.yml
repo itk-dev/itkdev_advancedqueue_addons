@@ -1,6 +1,6 @@
-name: "itkdev_advancedqueue"
+name: "Advanced Queue add-ons"
 type: module
-description: "Advanced queue extension"
+description: "Add-ons for Advanced Queue"
 package: Custom
 core_version_requirement: ^11
 
