@@ -1,0 +1,19 @@
+# This file is copied from config/drupal-module-ddev/phpstan.neon in https://github.com/itk-dev/devops_itkdev-docker.
+# Feel free to edit the file, but consider making a pull request if you find a general issue with the file.
+
+includes:
+  # This placeholder filename will be replaced with the value of variable $_PHPSTAN_BASELINE_FILENAME
+  - phpstan-baseline.neon
+parameters:
+    level: 6
+    fileExtensions:
+        - php
+        - module
+        - inc
+        - install
+        - theme
+        - profile
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # new static() is a best practice in Drupal, so we cannot fix that.
+        - "#^Unsafe usage of new static#"
