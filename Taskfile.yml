@@ -124,9 +124,16 @@ tasks:
       - ddev add-on get ddev/ddev-drupal-contrib
       - ddev restart
 
+  drupal:site-install:
+    desc: Install Drupal and enable itkdev_advancedqueue_addons module
+    cmds:
+      - ddev drush --yes site:install
+      - ddev drush --yes pm:install itkdev_advancedqueue_addons
+
   docs:update:
     desc: Update documentation
     platforms: [darwin]
+    deps: [drupal:site-install]
     cmds:
       - brew install pipx
       - pipx install markdown-code-runner
