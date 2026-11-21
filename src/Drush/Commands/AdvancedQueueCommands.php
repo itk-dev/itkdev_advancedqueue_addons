@@ -4,8 +4,6 @@ namespace Drupal\itkdev_advancedqueue_addons\Drush\Commands;
 
 use Drupal\advancedqueue\Entity\Queue;
 use Drupal\advancedqueue\Plugin\AdvancedQueue\Backend\SupportsLoadingJobsInterface;
-use Drupal\advancedqueue\ProcessorInterface;
-use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\MemoryStorage;
 use Drupal\Core\Config\StorageInterface;
@@ -16,7 +14,6 @@ use Drush\Commands\config\ConfigCommands;
 use Drush\Commands\DrushCommands;
 use Drush\Exceptions\UserAbortException;
 use Symfony\Component\Console\Exception\RuntimeException;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
@@ -28,53 +25,11 @@ final class AdvancedQueueCommands extends DrushCommands {
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
-    #[Autowire(service: 'advancedqueue.processor')]
-    private readonly ProcessorInterface $processor,
   ) {
   }
 
   // Command names matching the advancedqueue command naming.
-  private const string COMMAND_PROCESS_JOB = 'advancedqueue:queue:job:process';
   private const string COMMAND_SET_PAYLOAD_VALUE = 'advancedqueue:queue:job:set-payload-value';
-
-  /**
-   * Process job command.
-   *
-   * @phpstan-param array<string, mixed> $options
-   *   The command options.
-   */
-  #[CLI\Command(name: self::COMMAND_PROCESS_JOB)]
-  #[CLI\Argument(name: 'queue_id', description: 'The queue ID.')]
-  #[CLI\Argument(name: 'job_id', description: 'Job ID')]
-  #[CLI\Option(name: 'show-payload', description: 'Show payload')]
-  #[CLI\Usage(name: self::COMMAND_PROCESS_JOB . ' my_queue 87', description: 'Ask for confirmation and process job with ID 87 in "my_queue" queue.')]
-  #[CLI\Usage(name: self::COMMAND_PROCESS_JOB . ' my_queue 87 --yes', description: 'Process job with ID 87 in "my_queue" queue without confirmation.')]
-  #[CLI\Usage(name: self::COMMAND_PROCESS_JOB . ' my_queue 87 --show-payload', description: 'Show job payload and process job with ID 87 in "my_queue" queue.')]
-  public function processJob(
-    string $queue_id,
-    string $job_id,
-    $options = [
-      'show-payload' => FALSE,
-    ],
-  ): int {
-    [$backend, $queue] = $this->loadQueueBackend($queue_id);
-    /** @var \Drupal\advancedqueue\Job $job */
-    $job = $backend->loadJob($job_id);
-
-    if ($options['show-payload']) {
-      $this->io()->section('Payload');
-      $this->io()->writeln(Yaml::encode($job->getPayload()));
-    }
-
-    $question = dt('Really process the job %id', ['%id' => $job->getId()]);
-    if (!$this->io()->confirm($question, default: FALSE)) {
-      return self::EXIT_SUCCESS;
-    }
-
-    $this->processor->processJob($job, $queue);
-
-    return self::EXIT_SUCCESS;
-  }
 
   /**
    * Set job payload value.
