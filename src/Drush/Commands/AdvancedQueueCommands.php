@@ -9,8 +9,6 @@ use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\MemoryStorage;
 use Drupal\Core\Config\StorageInterface;
-use Drupal\Core\Database\Connection;
-use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drush\Attributes as CLI;
@@ -30,118 +28,14 @@ final class AdvancedQueueCommands extends DrushCommands {
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly Connection $connection,
     #[Autowire(service: 'advancedqueue.processor')]
     private readonly ProcessorInterface $processor,
   ) {
   }
 
   // Command names matching the advancedqueue command naming.
-  private const string COMMAND_LIST_JOBS = 'advancedqueue:queue:list:jobs';
   private const string COMMAND_PROCESS_JOB = 'advancedqueue:queue:job:process';
   private const string COMMAND_SET_PAYLOAD_VALUE = 'advancedqueue:queue:job:set-payload-value';
-
-  /**
-   * List jobs command.
-   *
-   * @phpstan-param array<string, mixed> $options
-   *   The command options.
-   */
-  #[CLI\Command(name: self::COMMAND_LIST_JOBS)]
-  #[CLI\Argument(name: 'queue_id', description: 'The queue ID.')]
-  #[CLI\Argument(name: 'job_id', description: 'Job ID')]
-  #[CLI\Option(name: 'show-payload', description: 'Show payload')]
-  #[CLI\Option(name: 'search', description: 'Search for a value, by path or by a JSON object')]
-  #[CLI\Option(name: 'limit', description: 'Maximum number of jobs to return (at most 100)')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue', description: 'Show jobs in "my_queue" queue.')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue 87', description: 'Show job with ID 87 in "my_queue" queue.')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue --show-payload', description: 'Show job payload.')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue --search horse', description: 'List jobs where "horse" is a value in the payload.')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue --search handler.id=87', description: 'List jobs where payload.handler.id has the (string) value "87".')]
-  #[CLI\Usage(name: self::COMMAND_LIST_JOBS . ' my_queue --search \'{"submissionId": "87"}\'', description: 'List jobs where payload contains the specified JSON object.')]
-  public function listJobs(
-    string $queue_id,
-    ?string $job_id = NULL,
-    $options = [
-      'show-payload' => FALSE,
-      'search' => NULL,
-      'limit' => 1,
-    ],
-  ): int {
-    [$backend] = $this->loadQueueBackend($queue_id);
-
-    // Build the query by hand to use JSON functions (cf.
-    // https://www.drupal.org/project/drupal/issues/3378275)
-    $query = 'SELECT job_id FROM {advancedqueue} WHERE queue_id = :queue_id';
-    $params = [
-      ':queue_id' => $queue_id,
-    ];
-    if ($job_id) {
-      $query .= ' AND job_id = :job_id';
-      $params[':job_id'] = $job_id;
-    }
-    if ($search = ($options['search'] ?? NULL)) {
-      $obj = json_decode($search);
-      if ($obj && is_object($obj)) {
-        // Search by JSON object, e.g
-        // --search '{"submissionId": "1"}'
-        // https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_contains
-        $query .= ' AND JSON_CONTAINS(payload, JSON_EXTRACT(:value, \'$\'))';
-        $params[':value'] = json_encode($obj);
-      }
-      elseif (preg_match('/^(?P<path>[^=]+)=(?P<value>.+)/', $search, $matches)) {
-        // Search by path and value, e.g
-        // --search handlerSettings.handler_id=fordelingskomponent_sf2900_1
-        // https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_extract
-        $query .= ' AND JSON_EXTRACT(payload, :path) = :value';
-        $params[':path'] = '$.' . $matches['path'];
-        $params[':value'] = $matches['value'];
-      }
-      else {
-        // Search by value, e.g
-        // --search fordelingskomponent_sf2900_1
-        // https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_search
-        $query .= ' AND JSON_SEARCH(payload, \'one\', :value) IS NOT NULL';
-        $params[':value'] = $search;
-      }
-    }
-    // Clamp limit between 0 and 100 (both inclusive).
-    $limit = max(0, min(100, (int) $options['limit']));
-    // @todo Can we pass limit as a parameter?
-    $query .= ' ORDER BY job_id DESC LIMIT ' . $limit;
-
-    $jobIds = $this->connection->query($query, $params)->fetchCol();
-
-    if (empty($jobIds)) {
-      $this->io()->info('No jobs found.');
-      return self::EXIT_SUCCESS;
-    }
-
-    /** @var \Drupal\advancedqueue\Job[] $jobs */
-    $jobs = array_map(fn(string $id) => $backend->loadJob($id), $jobIds);
-
-    foreach ($jobs as $job) {
-      $this->io()->definitionList(
-        ['ID' => $job->getId()],
-        ['State' => $job->getState()],
-        ['Message' => $job->getMessage()],
-        ['Processed time' => $this->formatDateTime($job->getProcessedTime())],
-        ['Available time' => $this->formatDateTime($job->getAvailableTime())],
-        ['Expires time' => $this->formatDateTime($job->getExpiresTime())],
-        ['Num retries' => $job->getNumRetries()],
-      );
-      if ($options['show-payload']) {
-        $this->io()->section('Payload');
-        $this->io()->writeln(Yaml::encode($job->getPayload()));
-      }
-    }
-
-    if (count($jobs) > 0 && 1 === $limit) {
-      $this->io()->note('Only one job listed. Use `--limit` to show more.');
-    }
-
-    return self::EXIT_SUCCESS;
-  }
 
   /**
    * Process job command.
@@ -298,13 +192,6 @@ final class AdvancedQueueCommands extends DrushCommands {
     }
 
     return [$backend, $queue];
-  }
-
-  /**
-   * Format a timestamp.
-   */
-  private function formatDateTime(int|string $timestamp): ?string {
-    return $timestamp ? DrupalDateTime::createFromTimestamp((int) $timestamp)->format(DrupalDateTime::FORMAT) : NULL;
   }
 
   /**
