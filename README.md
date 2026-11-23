@@ -66,7 +66,10 @@ Arguments:
  job-id (job-id)... A list of job IDs. Note: Jobs are processed in the order specified and not in queue order.
 
 Options:
---show-payload Show payload
+--show-payload  Show payload
+--format=FORMAT Format the result data. Available formats: csv,json,list,null,php,print-r,sections,string,table,tsv,var_dump,var_export,xml,yaml [default: table]
+--fields=FIELDS Limit output to only the listed elements. Name top-level elements by key, e.g. "--fields=name,date", or use dot notation to select a nested element, e.g. "--fields=a.b.c as example".
+--field=FIELD   Select just one field, and force format to *string*.
 
 Global options:
 -v|vv|vvv, --verbose Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
