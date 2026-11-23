@@ -114,7 +114,11 @@ final class ListJobsCommand extends BaseCommand {
       }
     }
     // Clamp limit between 1 and 100 (both inclusive).
-    $limit = max(1, min(100, $limit));
+    $limit = max(max(1, count($jobIds)), min(100, $limit));
+    // If job IDs are specified, we allow listing them all.
+    if (count($jobIds) > 0) {
+      $limit = max($limit, count($jobIds));
+    }
     // @todo Can we pass limit as a parameter?
     $query .= ' ORDER BY job_id DESC LIMIT ' . $limit;
 

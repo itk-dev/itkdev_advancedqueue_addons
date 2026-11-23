@@ -130,6 +130,22 @@ class ListJobsCommandTest extends BrowserTestBase {
     $payload = $output[0]['Payload'];
     $this->assertArrayHasKey('id', $payload);
     $this->assertSame('the second job', $payload['id']);
+
+    $this->drush(
+      'advancedqueue:queue:list:jobs',
+      ['first_queue', 1, 2],
+      ['format' => 'json'],
+    );
+    $output = $this->getOutputFromJSON();
+    $this->assertCount(2, $output);
+
+    $this->drush(
+      'advancedqueue:queue:list:jobs',
+      ['first_queue', 1, 2],
+      ['format' => 'json', 'limit' => 1],
+    );
+    $output = $this->getOutputFromJSON();
+    $this->assertCount(2, $output);
   }
 
 }
