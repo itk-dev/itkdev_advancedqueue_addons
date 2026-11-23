@@ -17,3 +17,5 @@ parameters:
     ignoreErrors:
         # new static() is a best practice in Drupal, so we cannot fix that.
         - "#^Unsafe usage of new static#"
+
+        - '#Drupal\\itkdev_advancedqueue_addons\\Drush\\Commands\\ListJobsCommand::\$formatterManager is never read, only written.#'

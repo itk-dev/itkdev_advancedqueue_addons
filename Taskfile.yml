@@ -139,3 +139,10 @@ tasks:
       - pipx install markdown-code-runner
       - pipx upgrade markdown-code-runner
       - markdown-code-runner README.md --verbose
+
+  test:
+    desc: Run all tests
+    cmd:
+      task: ddev
+      vars:
+        TASK_ARGS: phpunit

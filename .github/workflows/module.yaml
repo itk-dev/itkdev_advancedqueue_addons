@@ -49,3 +49,6 @@ jobs:
 
       - name: Rector
         run: ddev php vendor/bin/rector --dry-run
+
+      - name: Test
+        run: ddev phpunit
