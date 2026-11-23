@@ -63,7 +63,7 @@ Process job in a queue.
 
 Arguments:
  queue-id           The queue ID.
- job-id (job-id)... A list of job IDs.
+ job-id (job-id)... A list of job IDs. Note: Jobs are processed in the order specified and not in queue order.
 
 Options:
 --show-payload Show payload
