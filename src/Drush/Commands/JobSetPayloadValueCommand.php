@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\itkdev_advancedqueue_addons\Drush\Commands;
 
-use Composer\Console\Input\InputOption;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\MemoryStorage;
 use Drupal\Core\Config\StorageInterface;
@@ -16,6 +15,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\OutputStyle;
 use Symfony\Component\Process\Exception\ProcessFailedException;
