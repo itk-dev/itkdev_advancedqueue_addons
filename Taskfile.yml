@@ -63,7 +63,7 @@ tasks:
       # Cf. .github/workflows/php.yaml
       - task: ddev
         vars:
-          TASK_ARGS: phpcbf .
+          TASK_ARGS: phpcbf
 
   coding-standards:php:check:
     desc: "Apply and check coding standards for PHP"
@@ -74,7 +74,7 @@ tasks:
       # Cf. .github/workflows/php.yaml
       - task: ddev
         vars:
-          TASK_ARGS: phpcs .
+          TASK_ARGS: phpcs
 
   coding-standards:yaml:apply:
     desc: "Apply coding standards for YAML"
