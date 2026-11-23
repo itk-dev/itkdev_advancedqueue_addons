@@ -42,7 +42,7 @@ final class JobProcessCommand extends BaseCommand {
     $this
       ->setDescription('Process job in a queue.')
       ->addArgument('queue-id', InputArgument::REQUIRED, description: 'The queue ID.')
-      ->addArgument('job-id', InputArgument::REQUIRED | InputArgument::IS_ARRAY, description: 'A list of job IDs.')
+      ->addArgument('job-id', InputArgument::REQUIRED | InputArgument::IS_ARRAY, description: 'A list of job IDs. Note: Jobs are processed in the order specified and not in queue order.')
       ->addOption('show-payload', description: 'Show payload');
   }
 
