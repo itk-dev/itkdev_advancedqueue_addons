@@ -1,0 +1,36 @@
+#!/bin/env php
+<?php
+
+// Set up a queue and some jobs for examples in README.md
+
+use Drupal\advancedqueue\Entity\Queue;
+use Drupal\advancedqueue\Job;
+
+$logger = \Drupal::logger(basename(__FILE__));
+
+$queueId = 'my_queue';
+$queue = Queue::load($queueId) ?? Queue::create([
+  'id' => $queueId,
+  'label' => 'My queue',
+  'backend' => 'database',
+]);
+$queue->save();
+
+$logger->notice("Queue {$queue->id()} created");
+
+$payloads = [
+  [
+    'id' => 'the first job',
+    'expected_exception' => 'The job failed',
+  ],
+  [
+    'id' => 'another job',
+  ],
+];
+
+foreach ($payloads as $payload) {
+  $job = Job::create(type: 'flexible', payload: $payload);
+  $queue->enqueueJob($job);
+
+  $logger->notice("Job {$job->getId()} enqueued in {$queue->id()}");
+}
