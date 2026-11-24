@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\itkdev_advancedqueue_addons\Drush\Commands;
 
+use Drush\Attributes as CLI;
+use Consolidation\OutputFormatters\FormatterManager;
+use Consolidation\OutputFormatters\StructuredData\RowsOfFields;
 use Drupal\advancedqueue\ProcessorInterface;
-use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drush\Commands\AutowireTrait;
+use Drush\Formatters\FormatterTrait;
 use Drush\Style\DrushStyle;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,8 +23,10 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 #[AsCommand(
   name: self::NAME,
 )]
+#[CLI\Formatter(returnType: RowsOfFields::class, defaultFormatter: 'table')]
 final class JobProcessCommand extends BaseCommand {
   use AutowireTrait;
+  use FormatterTrait;
 
   // Command name matching the advancedqueue command naming.
   public const string NAME = 'advancedqueue:queue:job:process';
@@ -29,6 +34,8 @@ final class JobProcessCommand extends BaseCommand {
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
     LoggerInterface $logger,
+    // Used in FormatterTrait.
+    private readonly FormatterManager $formatterManager,
     #[Autowire(service: 'advancedqueue.processor')]
     private readonly ProcessorInterface $processor,
   ) {
@@ -50,12 +57,14 @@ final class JobProcessCommand extends BaseCommand {
    * {@inheritdoc}
    */
   public function execute(InputInterface $input, OutputInterface $output): int {
-    $this->doExecute(
+    $data = $this->doExecute(
       io: new DrushStyle($input, $output),
       queueId: $input->getArgument('queue-id'),
       jobIds: $input->getArgument('job-id'),
-      showPayload: $input->getOption('show-payload'),
+      showPayload: $input->getOption('show-payload'), format: $input->getOption('format'),
     );
+
+    $this->writeFormattedOutput($input, $output, $data);
 
     return self::SUCCESS;
   }
@@ -65,24 +74,42 @@ final class JobProcessCommand extends BaseCommand {
    *
    * @phpstan-param list<string> $jobIds
    */
-  public function doExecute(DrushStyle $io, string $queueId, array $jobIds, ?string $search = NULL, ?int $limit = 1, ?bool $showPayload = FALSE): void {
+  public function doExecute(DrushStyle $io, string $queueId, array $jobIds, ?bool $showPayload = FALSE, ?string $format = 'json'): RowsOfFields {
     [$backend, $queue] = $this->loadQueueBackend($queueId);
-    foreach ($jobIds as $jobId) {
-      /** @var \Drupal\advancedqueue\Job $job */
-      $job = $backend->loadJob($jobId);
 
+    $rows = new RowsOfFields([]);
+
+    /** @var \Drupal\advancedqueue\Job[] $jobs */
+    $jobs = array_map(static fn(string $id) => $backend->loadJob($id), $jobIds);
+
+    foreach ($jobs as $job) {
+      $row = [
+        'ID' => $job->getId(),
+      ];
       if ($showPayload) {
-        $io->section('Payload');
-        $io->writeln(Yaml::encode($job->getPayload()));
+        $payload = $job->getPayload();
+        $row['Payload'] = match ($format) {
+          'json', 'yaml' => $payload,
+          default => json_encode($payload, flags: JSON_THROW_ON_ERROR),
+        };
       }
 
       $question = dt('Really process job %id', ['%id' => $job->getId()]);
       if (!$io->confirm($question, default: FALSE)) {
-        continue;
+        $row['Result'] = 'skipped';
+      }
+      else {
+        $result = $this->processor->processJob($job, $queue);
+        $row['Result'] = $result->getState();
+        if ($result->getMessage()) {
+          $row['Result'] .= ': ' . $result->getMessage();
+        }
       }
 
-      $this->processor->processJob($job, $queue);
+      $rows[] = $row;
     }
+
+    return $rows;
   }
 
 }
