@@ -133,12 +133,26 @@ tasks:
   docs:update:
     desc: Update documentation
     platforms: [darwin]
-    deps: [drupal:site-install]
+    deps:
+      - drupal:site-install
     cmds:
       - brew install pipx
       - pipx install markdown-code-runner
       - pipx upgrade markdown-code-runner
+      - task: docs:update:prepare
       - markdown-code-runner README.md --verbose
+
+  docs:update:prepare:
+    desc: Prepare for test runs used in documentation
+    cmds:
+      # Include test modules
+      - |-
+        cat >> web/sites/default/settings.ddev.php <<'EOF'
+        $settings['extension_discovery_scan_tests'] = TRUE;
+        EOF
+      - ddev drush pm:install advancedqueue_test
+      - ddev drush sql:query "TRUNCATE advancedqueue"
+      - ddev drush php:script ../scripts/docs:update:prepare
 
   test:
     desc: Run all tests
